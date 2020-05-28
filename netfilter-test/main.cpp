@@ -33,8 +33,9 @@ int Url_filter(unsigned char* data){
     int tcp_hdr_len = (TCP->th_off)*4;
     int tcp_payload = total_len - ip_hdr_len - tcp_hdr_len;
     data = data + tcp_hdr_len;
-    char data_buf[host_size]; // data_copy
-    char host_buf[host_size]; // Input_copy
+    char* data_buf = (char*) malloc(sizeof(char) * host_size);
+    //char data_buf[host_size]; // data_copy
+    //char host_buf[host_size]; // Input_copy // x
     if(IP->ip_p == IPPROTO_TCP && ntohs(TCP->th_dport) == 80){
         for(int i = 0; i<tcp_payload; i++ ){
             if(data[i] == 0x0d && data[i+1] == 0x0a && data[i+2] == 0x48 && data[i+3] == 0x6f &&
@@ -42,18 +43,21 @@ int Url_filter(unsigned char* data){
                 printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
                 printf("host addr size : %d\n", host_size);
 
-                for(int j=0; j<host_size; j++){
-                    data_buf[j] = data[i+host+j];
+                for(int j=0; j<100; j++){
+                    if(data[i+host+j] == 0x0d && data[i+host+j+1] == 0x0a){
+                        break;
+                    }
+                        data_buf[j] = data[i+host+j];
                 }
 
                 printf("Input URL : %s\n",data_buf);
 
-                strcpy(host_buf, HostAddr); // copy
+                //strcpy(host_buf, HostAddr); // copy
 
-                printf("Block URL : %s\n", host_buf);
+                //printf("Block URL : %s\n", host_buf); //
 
                 printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-                return check = strcmp(host_buf, data_buf);
+                return check = strncmp(HostAddr, data_buf, host_size); // packet test.gilgil.net.naver.com // test.gilgil.net
 
             }
         }
@@ -112,10 +116,11 @@ static u_int32_t print_pkt (struct nfq_data *tb)
 
     ret = nfq_get_payload(tb, &data);
 
-    Url_filter(data);
+
     //dump(data, ret);
     printf("\n");
     if (ret >= 0){
+        Url_filter(data);
         printf("payload_len=%d \n", ret);
     }
 
